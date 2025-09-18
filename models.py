@@ -18,6 +18,7 @@ class LLMClient:
         if os.getenv("OPENAI_API_KEY"):
             logging.info("Using OpenAI backend")
             from openai_models import OpenAIClient
+            print("Using OPENai")
             self.backend = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
         else:
             logging.info("Using Ollama backend")
