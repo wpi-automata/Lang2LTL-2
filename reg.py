@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from openai_models import GPT4V, get_embed
+from models import LLMClient
 from utils import load_from_file, save_to_file
 
 
@@ -19,9 +19,10 @@ def embed_images(img_fpaths, cap_dpath, embed_dpath):
             img_cap = load_from_file(cap_fpath)
             img_embed = load_from_file(embed_fpath)
         else:
-            img_cap = GPT4V().caption(img_fpath)  # image caption
+            client = LLMClient()
+            img_cap = client.caption(img_fpath)  # image caption
             save_to_file(img_cap, cap_fpath)
-            img_embed = get_embed(img_cap)  # embed image captioin
+            img_embed = client.get_embed(img_cap)  # embed image captioin
             save_to_file(img_embed, embed_fpath)
 
         img_embeds[img_id] = img_embed
@@ -39,7 +40,7 @@ def embed_texts(txts, obj_locs, embed_dpath):
                 txt_emebed = load_from_file(embed_fpath)
             else:
                 txt["name"] = lmk_name  # add landmark name into its textual description
-                txt_emebed = get_embed(txt)
+                txt_emebed = LLMClient().get_embed(txt)
                 save_to_file(txt_emebed, embed_fpath)
 
             txt_embeds[lmk_name] = txt_emebed
@@ -72,12 +73,15 @@ class REG():
 
     def query(self, query, topk):
         if query in self.query_cache:
+            print(f"Query Cache {self.query_cache[query]}")
             query_embeds = self.query_cache[query]
         else:
-            query_embeds = get_embed(query)
+            query_embeds = LLMClient().get_embed(query)
+            print(f"From LLM Query Embeds {query_embeds}")
             self.query_cache[query] = query_embeds
             save_to_file(self.query_cache, self.query_cache_fpath)
-
+        print(f"Query Embeds {np.array(query_embeds).shape}") # This shape is wrong
+        print(f"Self embeds {self.sem_embeds.shape}")
         query_scores = cosine_similarity(np.array(query_embeds).reshape(1, -1), self.sem_embeds)[0]
         lmks_sorted = sorted(zip(query_scores, self.sem_ids), reverse=True)
         return lmks_sorted[:topk]

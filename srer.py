@@ -2,7 +2,7 @@ import os
 from tqdm import tqdm
 import logging
 
-from openai_models import extract
+from models import *
 from utils import load_from_file, save_to_file
 
 
@@ -11,9 +11,12 @@ PROPS = ['a', 'b', 'c', 'd', 'h', 'j', 'k']
 
 def parse_llm_output(utt, raw_out):
     parsed_out = {}
+    print(raw_out)
     for line in raw_out.split('\n'):
         try:
             if line.startswith("Referring Expressions:"):
+                print("Jump Here!!!!!")
+                print(line.split("Referring Expressions: ")[1])
                 parsed_out["sres"] = eval(line.split("Referring Expressions: ")[1])
             if line.startswith("Spatial Predicates: "):
                 parsed_out["spatial_preds"] = eval(line.split("Spatial Predicates: ")[1])
@@ -24,7 +27,7 @@ def parse_llm_output(utt, raw_out):
 
     # Map each spatial referring expression (SRE) to its corresponding spatial predicate
     parsed_out["sre_to_preds"] = {}
-
+    print(parsed_out)
     for sre in parsed_out["sres"]:
         found_re = False  # there may be RE without spatial relation
 
@@ -69,7 +72,7 @@ def parse_llm_output(utt, raw_out):
 
 
 def srer(utt):
-    raw_out = extract(utt)
+    raw_out = LLMClient().extract(utt)
     parsed_out = {"utt": utt}
     parsed_out.update(parse_llm_output(utt, raw_out))
     return raw_out, parsed_out
