@@ -1,5 +1,4 @@
 import os
-import base64
 import json
 import logging
 from time import sleep
