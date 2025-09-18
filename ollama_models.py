@@ -8,7 +8,6 @@ from time import sleep
 from models import encode_image
 from utils import load_from_file
 
-# Configuration: Ollama server and model
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_TEXT_MODEL = os.getenv("OLLAMA_TEXT_MODEL", "deepseek-r1:8b")
 OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "gemma3:4b")
@@ -19,7 +18,6 @@ class OllamaClient:
 
 
     def chat(self, messages, model=OLLAMA_TEXT_MODEL, stream=False, options=None):
-        """Send a chat request to the Ollama server."""
         url = f"{OLLAMA_HOST}/api/chat"
         payload = {
             "model": model,
@@ -36,7 +34,6 @@ class OllamaClient:
 
 
     def embed(self, texts, model="mxbai-embed-large:335m"):
-        """Generate embeddings using Ollama."""
         url = f"{OLLAMA_HOST}/api/embeddings"
         payload = {
             "model": model,
@@ -63,9 +60,6 @@ class OllamaClient:
 
 
     def caption(self, img_fpath):
-        """
-        Use gemma3:4b on Ollama to caption an image.
-        """
         complete = False
         ntries = 0
         while not complete:
@@ -127,4 +121,4 @@ class OllamaClient:
                 ntries += 1
 
         response = raw_response.replace("\"", "").split(": ")[-1]
-        return response, None  # Ollama doesn't return token usage yet
+        return response, None
