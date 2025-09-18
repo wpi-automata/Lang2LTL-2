@@ -96,6 +96,7 @@ class OpenAIClient:
                     model="text-embedding-3-large",
                     input=txt
                 )
+                print(f"Raw Responses {raw_responses}")
                 complete = True
             except:
                 sleep(30)
