@@ -18,14 +18,14 @@ class OpenAIClient:
         self.client = OpenAI(api_key=api_key)
 
     def extract(self, command):
-        client = OpenAI()
-        raw_responses = client.chat.completions.create(
+        raw_responses = self.client.chat.completions.create(
             model="gpt-5",
             # temperature=0.1,
-            max_completion_tokens=1500,
+            max_completion_tokens=1500, #TODO investigate if this needs to be higher
             frequency_penalty=0,
             presence_penalty=0,
             top_p=1,
+            reasoning_effort="low",
             messages=[
                 {
                     "role": "system",
@@ -37,10 +37,10 @@ class OpenAIClient:
                 }
             ],
         )
+        print(f"Raw Responses in model {raw_responses}")
         return raw_responses.choices[0].message.content
 
     def caption(self, img_fpath, temp=0, max_tokens=128, n=1, stop=['\n']):
-        client = OpenAI()
 
         temp = temp
         max_tokens = max_tokens
@@ -96,7 +96,6 @@ class OpenAIClient:
                     model="text-embedding-3-large",
                     input=txt
                 )
-                print(f"Raw Responses {raw_responses}")
                 complete = True
             except:
                 sleep(30)
