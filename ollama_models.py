@@ -1,63 +1,51 @@
 import os
-import base64
 import json
-import requests
 import logging
 from time import sleep
+
+import ollama
 
 from models import encode_image
 from utils import load_from_file
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_TEXT_MODEL = os.getenv("OLLAMA_TEXT_MODEL", "deepseek-r1:8b")
+# OLLAMA_HOST config should be an env variable and is auto pulled by ollama.
+OLLAMA_TEXT_MODEL = os.getenv("OLLAMA_TEXT_MODEL", "deepseek-r1:14b")
 OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "gemma3:4b")
 
 srer_prompt_fpath = os.path.join(os.path.expanduser("~"), "ground", "data", "srer_prompt.txt")
 
 class OllamaClient:
 
-
     def chat(self, messages, model=OLLAMA_TEXT_MODEL, stream=False, options=None):
-        url = f"{OLLAMA_HOST}/api/chat"
-        payload = {
-            "model": model,
-            "messages": messages,
-            "stream": stream
-        }
-        if options:
-            payload["options"] = options
-
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        return data["message"]["content"]
-
+        response = ollama.chat(
+            model=model,
+            messages=messages,
+            stream=stream,
+            options=options or {}
+        )
+        return response["message"]["content"]
 
     def embed(self, texts, model="mxbai-embed-large:335m"):
-        url = f"{OLLAMA_HOST}/api/embeddings"
-        payload = {
-            "model": model,
-            "prompt": texts,
-        }
-        print("Getting embeds")
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        print(f"Response .json {data}")
-        return data["embedding"]
-
+        response = ollama.embeddings(
+            model=model,
+            prompt=texts
+        )
+        return response["embedding"]
 
     def extract(self, command):
         messages = [
             {"role": "system", "content": load_from_file(srer_prompt_fpath)},
             {
                 "role": "user",
-                "content": f"Extract the referring expressions to predicates map, lifted command, "
-                           f"and symbol map for the following command:\n\nCommand:{command}"
+                "content": (
+                    "Always respond in strict lists format"
+                    "Extract the referring expressions to predicates map, "
+                    "lifted command, and symbol map for the following command:\n\n"
+                    f"Command:{command}"
+                )
             }
         ]
         return self.chat(messages)
-
 
     def caption(self, img_fpath):
         complete = False
@@ -83,8 +71,6 @@ class OllamaClient:
                 ntries += 1
         return raw_response
 
-
-
     def get_embed(self, txt):
         txt = json.dumps(txt).replace("\n", " ")
         complete = False
@@ -100,7 +86,6 @@ class OllamaClient:
                 ntries += 1
 
         return embedding
-
 
     def translate(self, query, examples):
         complete = False

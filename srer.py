@@ -13,6 +13,7 @@ def parse_llm_output(utt, raw_out):
     parsed_out = {}
     print(f"Raw Out: {raw_out}")
     for line in raw_out.split('\n'):
+        line = line.replace("**", "")
         try:
             if line.startswith("Referring Expressions:"):
                 print("Jump Here!!!!!")
