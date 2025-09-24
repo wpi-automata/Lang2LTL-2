@@ -33,7 +33,7 @@ class OpenAIClient:
                 },
                 {
                     "role": "user",
-                    "content": f"Extract the referring expressions to predicates map, lifted command, and symbol map for the following command:\n\nCommand:{command}"
+                    "content": f"Extract the referring expressions to predicates map, lifted command, and symbol map into a json for the following command:\n\nCommand:{command}"
                 }
             ],
         )
@@ -88,6 +88,7 @@ class OpenAIClient:
     def get_embed(self, txt):
         client = OpenAI()
         txt = json.dumps(txt).replace("\n", " ")
+        print(f"Tex to embed: {txt}")
         complete = False
         ntries = 0
         while not complete:
@@ -103,7 +104,6 @@ class OpenAIClient:
                 # logging.info(f"{ntries}: waiting for the server. sleep for 30 sec...\n{query_prompt}")
                 print("OK continue")
                 ntries += 1
-
         embedding = raw_responses.data[0].embedding
         return embedding
 
