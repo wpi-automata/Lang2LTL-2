@@ -13,18 +13,19 @@ class LLMClient:
     Unified interface for switching between OpenAI and Ollama.
     Uses OpenAI if OPENAI_API_KEY is set, otherwise falls back to Ollama.
     """
-
     def __init__(self):
         if os.getenv("OPENAI_API_KEY"):
             logging.info("Using OpenAI backend")
             from openai_models import OpenAIClient
             print("Using OPENai")
             self.backend = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
+            self.model_type = "openai"
         else:
             logging.info("Using Ollama backend")
             from ollama_models import OllamaClient
             self.backend = OllamaClient(
             )
+            self.model_type = "ollama"
 
     def chat(self, messages, **kwargs):
         return self.backend.chat(messages, **kwargs)

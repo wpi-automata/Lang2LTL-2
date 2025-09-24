@@ -25,12 +25,15 @@ class OllamaClient:
         )
         return response["message"]["content"]
 
-    def embed(self, texts, model="mxbai-embed-large:335m"):
-        response = ollama.embeddings(
+    def embed(self, texts, model="mxbai-embed-large:latest"):
+        print(f"Tex to embed: {texts}")
+        response = ollama.embed(
             model=model,
-            prompt=texts
+            input=texts,
+            dimensions=3072
         )
-        return response["embedding"]
+        print(response)
+        return response["embeddings"]
 
     def extract(self, command):
         messages = [
@@ -38,10 +41,12 @@ class OllamaClient:
             {
                 "role": "user",
                 "content": (
-                    "Always respond in strict lists format"
-                    "Extract the referring expressions to predicates map, "
-                    "lifted command, and symbol map for the following command:\n\n"
-                    f"Command:{command}"
+                    f"Extract the referring expressions to predicates map, lifted command, and symbol map into a json for the following command:\n\nCommand:{command}"
+
+                    # "Always include your answer in json format"
+                    # "Extract the referring expressions to predicates map, "
+                    # "lifted command, and symbol map for the following command in a single line (no line breaks, no bullet points):\n\n"
+                    # f"Command:{command}"
                 )
             }
         ]
@@ -73,6 +78,7 @@ class OllamaClient:
 
     def get_embed(self, txt):
         txt = json.dumps(txt).replace("\n", " ")
+        print(txt)
         complete = False
         ntries = 0
         while not complete:

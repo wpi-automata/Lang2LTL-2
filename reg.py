@@ -66,10 +66,13 @@ class REG():
         self.sem_embeds = np.array(sem_embeds)
 
         if os.path.isfile(query_cache_fpath):
+            print("Loading from file cache")
+            # self.query_cache = {}
             self.query_cache = load_from_file(query_cache_fpath)
         else:
             self.query_cache = {}
         self.query_cache_fpath = query_cache_fpath
+        print(query_cache_fpath)
 
     def query(self, query, topk):
         if query in self.query_cache:
@@ -101,7 +104,7 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
         img_embeds = embed_images(img_fpaths, img_cap_dpath, img_embed_dpath)
 
     if not ablate or ablate == "both" or ablate == "image":
-        txt_embed_dpath = os.path.join(graph_dpath, "text_embeds")
+        txt_embed_dpath = os.path.join(graph_dpath, f"text_embeds_{LLMClient().model_type}")
         os.makedirs(txt_embed_dpath, exist_ok=True)
 
         obj_locs_fpath = os.path.join(graph_dpath, "obj_locs.json")  # avoid lmks with visual description
