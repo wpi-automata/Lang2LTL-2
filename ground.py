@@ -29,11 +29,8 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
     # Substitute symbols by groundings of spatial referring expressions
     sym2ground = {}  # only language grounding: language grounding symbol to lmk ID. robot demo: language grounding symbol to planner symbol
-    print(f"Lifted Symbol Map: {srer_out}")
+    print(f"Lifted Symbol Map: {srer_out['lifted_symbol_map']}")
     for symbol, sre in srer_out["lifted_symbol_map"].items():
-        print(srer_out["grounded_sps"])
-        print(srer_out["grounded_sps"][sre])
-        print(srer_out["grounded_sps"][sre][0])
         ground = srer_out["grounded_sps"][sre][0]["target"]
         sym2ground[symbol] = lmk2sym[ground] if lmk2sym else ground
     srer_out["sym2ground"] = sym2ground
@@ -52,8 +49,8 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--loc", type=str, default="outdoor", choices=["indoor", "outdoor"], help="env name.")
-    parser.add_argument("--ablate", type=str, default=None, choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
+    parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor"], help="env name.")
+    parser.add_argument("--ablate", type=str, default="text", choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
     parser.add_argument("--topk", type=int, default=10, help="top k most likely landmarks grounded by REG.")
     args = parser.parse_args()
 

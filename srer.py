@@ -14,30 +14,21 @@ PROPS = ['a', 'b', 'c', 'd', 'h', 'j', 'k']
 
 def parse_llm_output(utt, raw_out):
     parsed_out = {}
-    print(f"Raw Out:\n {raw_out}")
     try:
         json_out = json.loads(raw_out)
     except Exception:
         match = re.search(r"```json\s*(\{.*?\})\s*```", raw_out, re.DOTALL)
-        print(match)
         json_out = json.loads(match.group(1))
 
-    print(json_out)
     for line in json_out:
         modified_line = line
-        print(modified_line)
         modified_line = modified_line.replace("**", "")
         modified_line = modified_line.replace("_", "")
         modified_line = modified_line.replace(" ", "")
         modified_line = modified_line.lower()
-        print(modified_line)
         try:
             if modified_line.startswith("referringexpressions"):
-                # print(line.split("Referring Expressions: ")[1])
-                print("Going to referring")
-                print(json_out[line])
                 parsed_out["sres"] = json_out[line]
-                print(parsed_out)
             if modified_line.startswith("spatialpredicates"):
                 parsed_out["spatial_preds"] = json_out[line]
             if modified_line.startswith("liftedcommand"):
@@ -61,16 +52,13 @@ def parse_llm_output(utt, raw_out):
 
     # Map each spatial referring expression (SRE) to its corresponding spatial predicate
     parsed_out["sre_to_preds"] = {}
-    print(parsed_out)
     for sre in parsed_out["sres"]:
         found_re = False  # there may be RE without spatial relation
 
         if "spatial_preds" not in parsed_out:
-            print("No spatial preds")
             parsed_out["sre_to_preds"][sre] = {}
         else:
             for pred in parsed_out["spatial_preds"]:
-                print("Spatial preds exists")
                 relation, lmks = list(pred.items())[0]
 
                 if relation in sre:
@@ -85,7 +73,6 @@ def parse_llm_output(utt, raw_out):
 
             if not found_re:  # find RE without spatial relation
                 parsed_out["sre_to_preds"][sre] = {}
-                print("Did not fine RE")
 
     # Replace spatial referring expressions by symbols
     lifted_utt = utt.lower()
