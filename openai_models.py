@@ -37,7 +37,7 @@ class OpenAIClient:
                 }
             ],
         )
-        print(f"Raw Responses in model {raw_responses}")
+        # print(f"Raw Responses in model {raw_responses}") #TODO investigate token limit and reaasoning effect
         return raw_responses.choices[0].message.content
 
     def caption(self, img_fpath, temp=0, max_tokens=128, n=1, stop=['\n']):
@@ -88,7 +88,6 @@ class OpenAIClient:
     def get_embed(self, txt):
         client = OpenAI()
         txt = json.dumps(txt).replace("\n", " ")
-        print(f"Tex to embed: {txt}")
         complete = False
         ntries = 0
         while not complete:

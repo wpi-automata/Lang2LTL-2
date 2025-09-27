@@ -35,7 +35,6 @@ def embed_texts(txts, obj_locs, embed_dpath):
         if lmk_name not in obj_locs:
             txt_id = lmk_name.lower().replace(" ", "_")
             embed_fpath = os.path.join(embed_dpath, f"{txt_id}.pkl")
-
             if os.path.isfile(embed_fpath):
                 txt_emebed = load_from_file(embed_fpath)
             else:
@@ -58,33 +57,24 @@ class REG():
         if img_embeds:
             self.sem_ids += list(img_embeds.keys())
             sem_embeds += list(img_embeds.values())
-
         if txt_embeds:
             self.sem_ids += list(txt_embeds.keys())
             sem_embeds += list(txt_embeds.values())
-
         self.sem_embeds = np.array(sem_embeds)
 
         if os.path.isfile(query_cache_fpath):
-            print("Loading from file cache")
-            # self.query_cache = {}
             self.query_cache = load_from_file(query_cache_fpath)
         else:
             self.query_cache = {}
         self.query_cache_fpath = query_cache_fpath
-        print(query_cache_fpath)
 
     def query(self, query, topk):
         if query in self.query_cache:
-            print(f"Query Cache {self.query_cache[query]}")
             query_embeds = self.query_cache[query]
         else:
             query_embeds = LLMClient().get_embed(query)
-            print(f"From LLM Query Embeds {query_embeds}")
             self.query_cache[query] = query_embeds
             save_to_file(self.query_cache, self.query_cache_fpath)
-        print(f"Query Embeds {np.array(query_embeds).shape}") # This shape is wrong
-        print(f"Self embeds {self.sem_embeds.shape}")
         query_scores = cosine_similarity(np.array(query_embeds).reshape(1, -1), self.sem_embeds)[0]
         lmks_sorted = sorted(zip(query_scores, self.sem_ids), reverse=True)
         return lmks_sorted[:topk]
@@ -96,7 +86,7 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
     if not ablate or ablate == "both" or ablate == "text":
         img_cap_dpath = os.path.join(graph_dpath, "image_captions")
         os.makedirs(img_cap_dpath, exist_ok=True)
-        img_embed_dpath = os.path.join(graph_dpath, "image_embeds")
+        img_embed_dpath = os.path.join(graph_dpath, f"image_embeds_{LLMClient().model_type}")
         os.makedirs(img_embed_dpath, exist_ok=True)
 
         img_dpath = os.path.join(graph_dpath, "images")  # SLAM
@@ -112,7 +102,6 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
 
         txts = load_from_file(osm_fpath)  # OSM
         txt_embeds = embed_texts(txts, obj_locs, txt_embed_dpath)
-
     reg = REG(img_embeds, txt_embeds, in_cache_fpath)
 
     for srer_out in tqdm(srer_outs, desc="Running referring expression grounding (REG) module"):

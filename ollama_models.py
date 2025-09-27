@@ -3,6 +3,7 @@ import json
 import logging
 from time import sleep
 
+import numpy as np
 import ollama
 
 from models import encode_image
@@ -26,14 +27,12 @@ class OllamaClient:
         return response["message"]["content"]
 
     def embed(self, texts, model="mxbai-embed-large:latest"):
-        print(f"Tex to embed: {texts}")
         response = ollama.embed(
             model=model,
             input=texts,
             dimensions=3072
         )
-        print(response)
-        return response["embeddings"]
+        return np.array(response["embeddings"][0])
 
     def extract(self, command):
         messages = [
@@ -78,7 +77,6 @@ class OllamaClient:
 
     def get_embed(self, txt):
         txt = json.dumps(txt).replace("\n", " ")
-        print(txt)
         complete = False
         ntries = 0
         while not complete:
@@ -90,7 +88,6 @@ class OllamaClient:
                 print(f"{ntries}: waiting for the server. sleep for 30 sec... {e}")
                 print("OK continue")
                 ntries += 1
-
         return embedding
 
     def translate(self, query, examples):
