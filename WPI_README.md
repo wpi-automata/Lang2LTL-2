@@ -18,4 +18,5 @@ If you want to run it with local models you first need to install [Ollama](https
 From here you need to install mxbai-embed-large:latest, your choice of vision capable llm, and your llm of choice.
 The vision capable llm and llm of choice can be the same. By default, they are gemma:4b and deepseek-r1:12b
 If you wish to have different models specify them with the OLLAMA_VISION_MODEL and OLLAMA_TEXT_MODEL environmental
-variables respectfully. Now with all of that set up you are good to run
+variables respectfully. If you are using an ollama instance not on your local machine specify the ip in OLLAMA_HOST
+environment variable. Now with all of that set up you are good to run.
