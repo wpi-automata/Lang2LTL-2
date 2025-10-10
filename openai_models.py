@@ -9,7 +9,6 @@ from openai import OpenAI
 from models import encode_image
 from utils import load_from_file
 
-# openai.api_key = os.getenv("OPENAI_API_KEY")
 srer_prompt_fpath = os.path.join(os.path.expanduser("~"), "ground", "data", "srer_prompt.txt")
 
 
