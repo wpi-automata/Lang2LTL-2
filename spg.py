@@ -119,7 +119,6 @@ def align_coordinates(graph_dpath, waypoints, osm_landmarks, coord_alignment, cr
     else:
         # This means we are only working with OSM landmarks
         print(" >> WARNING: not using Spot graph")
-
     # Process then add OSM landmarks if provided
     if osm_landmarks:
         for lmk, lmk_desc in osm_landmarks.items():

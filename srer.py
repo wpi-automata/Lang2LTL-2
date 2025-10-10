@@ -19,7 +19,6 @@ def parse_llm_output(utt, raw_out):
     except Exception:
         match = re.search(r"```json\s*(\{.*?\})\s*```", raw_out, re.DOTALL)
         json_out = json.loads(match.group(1))
-
     for line in json_out:
         modified_line = line
         modified_line = modified_line.replace("**", "")
@@ -30,6 +29,7 @@ def parse_llm_output(utt, raw_out):
             if modified_line.startswith("referringexpressions"):
                 parsed_out["sres"] = json_out[line]
             if modified_line.startswith("spatialpredicates"):
+                re.sub(r'\[{2,}', '[', modified_line)
                 parsed_out["spatial_preds"] = json_out[line]
             if modified_line.startswith("liftedcommand"):
                 parsed_out["lifted_utt"] = json_out[line]
@@ -52,6 +52,10 @@ def parse_llm_output(utt, raw_out):
 
     # Map each spatial referring expression (SRE) to its corresponding spatial predicate
     parsed_out["sre_to_preds"] = {}
+    if type(parsed_out["spatial_preds"]) is dict:
+        parsed_out["spatial_preds"] = [parsed_out["spatial_preds"]]
+        print(f"Swaped to type is: {type(parsed_out['spatial_preds'])}")
+
     for sre in parsed_out["sres"]:
         found_re = False  # there may be RE without spatial relation
 
@@ -103,13 +107,16 @@ def srer(utt):
 
 
 def run_exp_srer(utts_fpath, srer_out_fpath):
-	if not os.path.isfile(srer_out_fpath):
-		srer_outs = []
-		utts = load_from_file(utts_fpath)
-		for utt in tqdm(utts, desc="Running spatial referring expression recognition (SRER) module"):
-			_, srer_out = srer(utt)
-			srer_outs.append(srer_out)
-		save_to_file(srer_outs, srer_out_fpath)
+    if not os.path.isfile(srer_out_fpath):
+        srer_outs = []
+        utts = load_from_file(utts_fpath)
+        for utt in tqdm(utts, desc="Running spatial referring expression recognition (SRER) module"):
+            try:
+                _, srer_out = srer(utt)
+                srer_outs.append(srer_out)
+            except Exception:
+                print(f"Failed on {utt}")
+        save_to_file(srer_outs, srer_out_fpath)
 
 
 if __name__ == "__main__":
