@@ -1,8 +1,11 @@
+import json
 import os
+import re
+
 from tqdm import tqdm
 import logging
 
-from openai_models import extract
+from models import *
 from utils import load_from_file, save_to_file
 
 
@@ -11,19 +14,47 @@ PROPS = ['a', 'b', 'c', 'd', 'h', 'j', 'k']
 
 def parse_llm_output(utt, raw_out):
     parsed_out = {}
-    for line in raw_out.split('\n'):
+    try:
+        json_out = json.loads(raw_out)
+    except Exception:
+        match = re.search(r"```json\s*(\{.*?\})\s*```", raw_out, re.DOTALL)
+        json_out = json.loads(match.group(1))
+    for line in json_out:
+        modified_line = line
+        modified_line = modified_line.replace("**", "")
+        modified_line = modified_line.replace("_", "")
+        modified_line = modified_line.replace(" ", "")
+        modified_line = modified_line.lower()
         try:
-            if line.startswith("Referring Expressions:"):
-                parsed_out["sres"] = eval(line.split("Referring Expressions: ")[1])
-            if line.startswith("Spatial Predicates: "):
-                parsed_out["spatial_preds"] = eval(line.split("Spatial Predicates: ")[1])
-            if line.startswith("Lifted Command:"):
-                parsed_out["lifted_utt"] = eval(line.split("Lifted Command: ")[1])
+            if modified_line.startswith("referringexpressions"):
+                parsed_out["sres"] = json_out[line]
+            if modified_line.startswith("spatialpredicates"):
+                re.sub(r'\[{2,}', '[', modified_line)
+                parsed_out["spatial_preds"] = json_out[line]
+            if modified_line.startswith("liftedcommand"):
+                parsed_out["lifted_utt"] = json_out[line]
         except Exception as e:
             logging.info(f"ERROR in LLM out: {line}\n{e}")
 
+    # for line in raw_out.split('\n'):
+    #     line = line.replace("**", "")
+    #     try:
+    #         if line.startswith("Referring Expressions:"):
+    #             print("Jump Here!!!!!")
+    #             print(line.split("Referring Expressions: ")[1])
+    #             parsed_out["sres"] = eval(line.split("Referring Expressions: ")[1])
+    #         if line.startswith("Spatial Predicates: "):
+    #             parsed_out["spatial_preds"] = eval(remove_unmatched_braces(line.split("Spatial Predicates: ")[1]))
+    #         if line.startswith("Lifted Command:"):
+    #             parsed_out["lifted_utt"] = eval(line.split("Lifted Command: ")[1])
+    #     except Exception as e:
+    #         logging.info(f"ERROR in LLM out: {line}\n{e}")
+
     # Map each spatial referring expression (SRE) to its corresponding spatial predicate
     parsed_out["sre_to_preds"] = {}
+    if type(parsed_out["spatial_preds"]) is dict:
+        parsed_out["spatial_preds"] = [parsed_out["spatial_preds"]]
+        print(f"Swaped to type is: {type(parsed_out['spatial_preds'])}")
 
     for sre in parsed_out["sres"]:
         found_re = False  # there may be RE without spatial relation
@@ -69,20 +100,23 @@ def parse_llm_output(utt, raw_out):
 
 
 def srer(utt):
-    raw_out = extract(utt)
+    raw_out = LLMClient().extract(utt)
     parsed_out = {"utt": utt}
     parsed_out.update(parse_llm_output(utt, raw_out))
     return raw_out, parsed_out
 
 
 def run_exp_srer(utts_fpath, srer_out_fpath):
-	if not os.path.isfile(srer_out_fpath):
-		srer_outs = []
-		utts = load_from_file(utts_fpath)
-		for utt in tqdm(utts, desc="Running spatial referring expression recognition (SRER) module"):
-			_, srer_out = srer(utt)
-			srer_outs.append(srer_out)
-		save_to_file(srer_outs, srer_out_fpath)
+    if not os.path.isfile(srer_out_fpath):
+        srer_outs = []
+        utts = load_from_file(utts_fpath)
+        for utt in tqdm(utts, desc="Running spatial referring expression recognition (SRER) module"):
+            try:
+                _, srer_out = srer(utt)
+                srer_outs.append(srer_out)
+            except Exception:
+                print(f"Failed on {utt}")
+        save_to_file(srer_outs, srer_out_fpath)
 
 
 if __name__ == "__main__":

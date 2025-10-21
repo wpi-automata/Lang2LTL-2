@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from openai_models import GPT4V, get_embed
+from models import LLMClient
 from utils import load_from_file, save_to_file
 
 
@@ -19,9 +19,10 @@ def embed_images(img_fpaths, cap_dpath, embed_dpath):
             img_cap = load_from_file(cap_fpath)
             img_embed = load_from_file(embed_fpath)
         else:
-            img_cap = GPT4V().caption(img_fpath)  # image caption
+            client = LLMClient()
+            img_cap = client.caption(img_fpath)  # image caption
             save_to_file(img_cap, cap_fpath)
-            img_embed = get_embed(img_cap)  # embed image captioin
+            img_embed = client.get_embed(img_cap)  # embed image captioin
             save_to_file(img_embed, embed_fpath)
 
         img_embeds[img_id] = img_embed
@@ -34,12 +35,11 @@ def embed_texts(txts, obj_locs, embed_dpath):
         if lmk_name not in obj_locs:
             txt_id = lmk_name.lower().replace(" ", "_")
             embed_fpath = os.path.join(embed_dpath, f"{txt_id}.pkl")
-
             if os.path.isfile(embed_fpath):
                 txt_emebed = load_from_file(embed_fpath)
             else:
                 txt["name"] = lmk_name  # add landmark name into its textual description
-                txt_emebed = get_embed(txt)
+                txt_emebed = LLMClient().get_embed(txt)
                 save_to_file(txt_emebed, embed_fpath)
 
             txt_embeds[lmk_name] = txt_emebed
@@ -57,11 +57,9 @@ class REG():
         if img_embeds:
             self.sem_ids += list(img_embeds.keys())
             sem_embeds += list(img_embeds.values())
-
         if txt_embeds:
             self.sem_ids += list(txt_embeds.keys())
             sem_embeds += list(txt_embeds.values())
-
         self.sem_embeds = np.array(sem_embeds)
 
         if os.path.isfile(query_cache_fpath):
@@ -74,10 +72,9 @@ class REG():
         if query in self.query_cache:
             query_embeds = self.query_cache[query]
         else:
-            query_embeds = get_embed(query)
+            query_embeds = LLMClient().get_embed(query)
             self.query_cache[query] = query_embeds
             save_to_file(self.query_cache, self.query_cache_fpath)
-
         query_scores = cosine_similarity(np.array(query_embeds).reshape(1, -1), self.sem_embeds)[0]
         lmks_sorted = sorted(zip(query_scores, self.sem_ids), reverse=True)
         return lmks_sorted[:topk]
@@ -89,7 +86,7 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
     if not ablate or ablate == "both" or ablate == "text":
         img_cap_dpath = os.path.join(graph_dpath, "image_captions")
         os.makedirs(img_cap_dpath, exist_ok=True)
-        img_embed_dpath = os.path.join(graph_dpath, "image_embeds")
+        img_embed_dpath = os.path.join(graph_dpath, f"image_embeds_{LLMClient().model_type}")
         os.makedirs(img_embed_dpath, exist_ok=True)
 
         img_dpath = os.path.join(graph_dpath, "images")  # SLAM
@@ -97,7 +94,7 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
         img_embeds = embed_images(img_fpaths, img_cap_dpath, img_embed_dpath)
 
     if not ablate or ablate == "both" or ablate == "image":
-        txt_embed_dpath = os.path.join(graph_dpath, "text_embeds")
+        txt_embed_dpath = os.path.join(graph_dpath, f"text_embeds_{LLMClient().model_type}")
         os.makedirs(txt_embed_dpath, exist_ok=True)
 
         obj_locs_fpath = os.path.join(graph_dpath, "obj_locs.json")  # avoid lmks with visual description
@@ -105,7 +102,6 @@ def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
 
         txts = load_from_file(osm_fpath)  # OSM
         txt_embeds = embed_texts(txts, obj_locs, txt_embed_dpath)
-
     reg = REG(img_embeds, txt_embeds, in_cache_fpath)
 
     for srer_out in tqdm(srer_outs, desc="Running referring expression grounding (REG) module"):

@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 
 from load_map import load_map, extract_waypoints
-from openai_models import get_embed
+from models import LLMClient
 from utils import load_from_file, save_to_file
 
 
@@ -119,7 +119,6 @@ def align_coordinates(graph_dpath, waypoints, osm_landmarks, coord_alignment, cr
     else:
         # This means we are only working with OSM landmarks
         print(" >> WARNING: not using Spot graph")
-
     # Process then add OSM landmarks if provided
     if osm_landmarks:
         for lmk, lmk_desc in osm_landmarks.items():
@@ -244,10 +243,11 @@ def find_match_rel(rel_unseen, known_rel_embeds_fpath):
     """
     Use cosine similatiry between text embeddings to find best matching known spatial relation to unseen input.
     """
+    client = LLMClient()
     if os.path.isfile(known_rel_embeds_fpath):
         known_rel_embeds = load_from_file(known_rel_embeds_fpath)
     else:
-        known_rel_embeds = {known_rel: get_embed(known_rel) for known_rel in KNOWN_RELATIONS}
+        known_rel_embeds = {known_rel: client.get_embed(known_rel) for known_rel in KNOWN_RELATIONS}
         save_to_file(known_rel_embeds, known_rel_embeds_fpath)
 
     # unseen_rel_embed = get_embed(rel_unseen)
@@ -256,7 +256,7 @@ def find_match_rel(rel_unseen, known_rel_embeds_fpath):
     if rel_unseen in unknown_rel_embeds:
         unseen_rel_embed = unknown_rel_embeds[rel_unseen]
     else:
-        unseen_rel_embed = get_embed(rel_unseen)
+        unseen_rel_embed = client.get_embed(rel_unseen)
         unknown_rel_embeds[rel_unseen] = unseen_rel_embed
         save_to_file(unknown_rel_embeds, unknown_rel_embeds_fpath)
         print(f"SAVED UNSEEN SPATIAL RELATION: {rel_unseen}'")

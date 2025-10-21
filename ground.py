@@ -1,6 +1,7 @@
 import os
 import argparse
 
+from models import LLMClient
 from srer import srer
 from reg import reg
 from spg import load_lmks, spg
@@ -28,6 +29,7 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
     # Substitute symbols by groundings of spatial referring expressions
     sym2ground = {}  # only language grounding: language grounding symbol to lmk ID. robot demo: language grounding symbol to planner symbol
+    print(f"Lifted Symbol Map: {srer_out['lifted_symbol_map']}")
     for symbol, sre in srer_out["lifted_symbol_map"].items():
         ground = srer_out["grounded_sps"][sre][0]["target"]
         sym2ground[symbol] = lmk2sym[ground] if lmk2sym else ground
@@ -47,8 +49,8 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--loc", type=str, default="outdoor", choices=["indoor", "outdoor"], help="env name.")
-    parser.add_argument("--ablate", type=str, default=None, choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
+    parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor"], help="env name.")
+    parser.add_argument("--ablate", type=str, default="text", choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
     parser.add_argument("--topk", type=int, default=10, help="top k most likely landmarks grounded by REG.")
     args = parser.parse_args()
 
@@ -59,16 +61,16 @@ if __name__ == "__main__":
     osm_fpath = os.path.join(data_dpath, "osm", f"{args.loc}.json")
     model_fpath = os.path.join(os.path.expanduser("~"), "ground", "models", "checkpoint-best")
     rel_embeds_fpath = os.path.join(data_dpath, f"known_rel_embeds.json")
-    reg_in_cache_fpath = os.path.join(data_dpath, f"reg_in_cache_{args.loc}.pkl")
+    reg_in_cache_fpath = os.path.join(data_dpath, f"reg_in_cache_{args.loc}_{LLMClient().model_type}.pkl")
     utt_fpath = os.path.join(data_dpath, f"utts_{args.loc}.txt")
     results_dpath = os.path.join(os.path.expanduser("~"), "ground", "results_spot", args.loc)
     os.makedirs(results_dpath, exist_ok=True)
     out_fpath = os.path.join(results_dpath, "srer_outs.json")
 
     utts = [
-        # "go to the couch in front of the TV, the couch to the left of the kitchen counter, the kitchen counter between the couch and the refrigerator, the table next to the door, and the chair on the left of the bookshelf in any order",
+        "Go to the couch in front of the television, the couch to the left of the kitchen counter, the kitchen counter between the couch and the refrigerator, the table next to the door, and the chair on the left of the bookshelf in any order",
 
-        "Visit the white car, then go to the red brick wall and then go to the silver car near the apartment, in addition you can never go to the apartment once you've seen the white car"
+        #"Visit the white car, then go to the red brick wall and then go to the silver car near the apartment, in addition you can never go to the apartment once you've seen the white car"
     ]
 
     ground_outs = []

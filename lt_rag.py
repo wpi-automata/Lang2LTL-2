@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 
-from openai_models import get_embed, translate
+from models import LLMClient
 from utils import deserialize_props_str, load_from_file, save_to_file
 
 
@@ -33,7 +33,7 @@ def retriever(query, embeds_fpath, raw_data, topk):
         if utt in utt2embed:
             embed = utt2embed[utt]
         else:
-            embed = get_embed(utt)  # embedding
+            embed = LLMClient().get_embed(utt)  # embedding
             utt2embed[utt] = embed
             embeds_updated = True
             print(f"added new prompt embedding:\n{utt}")
@@ -48,7 +48,7 @@ def retriever(query, embeds_fpath, raw_data, topk):
     if query_str in utt2embed:
         embed_query = utt2embed[query_str]
     else:
-        embed_query = get_embed(query)
+        embed_query = LLMClient().get_embed(query)
         utt2embed[query_str] = embed_query
         embeds_updated = True
         print(f"added new query embedding:\n{utt}")
@@ -72,7 +72,7 @@ def lifted_translate(query, embeds_fpath, raw_data, topk):
 
     # breakpoint()
 
-    lifted_ltl, num_tokens = translate(query[0], prompt_examples)
+    lifted_ltl, num_tokens = LLMClient().translate(query[0], prompt_examples)
     return lifted_ltl, num_tokens
 
 
