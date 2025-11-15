@@ -43,7 +43,7 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
         for ground_sym, plan_sym in sym2ground.items():
             grounded_ltl = grounded_ltl.replace(f"<{ground_sym}>", plan_sym)
         srer_out["grounded_ltl"] = grounded_ltl
-
+    print(srer_out)
     return srer_out
 
 
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     out_fpath = os.path.join(results_dpath, "srer_outs.json")
 
     utts = [
-        "Go to the couch in front of the television, the couch to the left of the kitchen counter, the kitchen counter between the couch and the refrigerator, the table next to the door, and the chair on the left of the bookshelf in any order",
-
+        #"Go to the couch in front of the television, the couch to the left of the kitchen counter, the kitchen counter between the couch and the refrigerator, the table next to the door, and the chair on the left of the bookshelf in any order",
+        "Go to the couch in front of the television without entering the kitchen"
         #"Visit the white car, then go to the red brick wall and then go to the silver car near the apartment, in addition you can never go to the apartment once you've seen the white car"
     ]
 

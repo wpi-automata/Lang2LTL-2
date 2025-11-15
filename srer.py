@@ -103,6 +103,7 @@ def srer(utt):
     raw_out = LLMClient().extract(utt)
     parsed_out = {"utt": utt}
     parsed_out.update(parse_llm_output(utt, raw_out))
+    print(parsed_out)
     return raw_out, parsed_out
 
 
