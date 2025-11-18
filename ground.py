@@ -1,7 +1,7 @@
 import os
 import argparse
 
-from models import LLMClient
+from llms.models import LLMClient
 from srer import srer
 from reg import reg
 from spg import load_lmks, spg

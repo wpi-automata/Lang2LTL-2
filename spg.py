@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 
 from load_map import load_map, extract_waypoints
-from models import LLMClient
+from llms.models import LLMClient
 from utils import load_from_file, save_to_file
 
 
