@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 
-from models import LLMClient
+from llms.models import LLMClient
 from utils import deserialize_props_str, load_from_file, save_to_file
 
 
