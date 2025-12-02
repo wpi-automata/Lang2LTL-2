@@ -8,9 +8,9 @@ from pyproj import Transformer
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 
-from load_map import load_map, extract_waypoints
+from .load_map import load_map, extract_waypoints
 from llms.models import LLMClient
-from utils import load_from_file, save_to_file
+from .utils import load_from_file, save_to_file
 
 
 KNOWN_RELATIONS = [
@@ -209,7 +209,7 @@ def load_lmks(graph_dpath=None, osm_fpath=None, ignore_graph=False):
     landmarks = align_coordinates(graph_dpath, waypoints, osm_landmarks, alignment_lmks, transformer)
 
     # Visualize landmarks
-    plot_landmarks(landmarks, osm_fpath)
+    # plot_landmarks(landmarks, osm_fpath)
 
     return landmarks
 
@@ -239,11 +239,11 @@ def sort_combs(lmk_grounds):
     return combs_sorted
 
 
-def find_match_rel(rel_unseen, known_rel_embeds_fpath):
+def find_match_rel(rel_unseen, known_rel_embeds_fpath, model):
     """
     Use cosine similatiry between text embeddings to find best matching known spatial relation to unseen input.
     """
-    client = LLMClient()
+    client = LLMClient(model)
     if os.path.isfile(known_rel_embeds_fpath):
         known_rel_embeds = load_from_file(known_rel_embeds_fpath)
     else:

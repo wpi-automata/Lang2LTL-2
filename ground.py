@@ -2,22 +2,22 @@ import os
 import argparse
 
 from llms.models import LLMClient
-from srer import srer
-from reg import reg
-from spg import load_lmks, spg
-from lt import Seq2Seq, lt
-from utils import load_from_file, save_to_file
+from .srer import srer
+from .reg import reg
+from .spg import load_lmks, spg
+from .lt import Seq2Seq, lt
+from .utils import load_from_file, save_to_file
 
 
-def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_embeds_fpath, reg_in_cache_fpath):
+def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_embeds_fpath, reg_in_cache_fpath, model="gpt"):
     """
     Grounding API function
     """
     # Spatial Referring Expression Recognition (SRER)
-    _, srer_out = srer(utt)  # subsequent module outputs also stored in this dict
+    _, srer_out = srer(utt, model)  # subsequent module outputs also stored in this dict
 
     # Referring Expression Grounding (REG)
-    reg(graph_dpath, osm_fpath, [srer_out], topk, ablate, reg_in_cache_fpath)
+    reg(graph_dpath, osm_fpath, [srer_out], topk, ablate, reg_in_cache_fpath, model)
 
     # Spatial Predicate Grounding (SPG)
     landmarks = load_lmks(graph_dpath, osm_fpath)
@@ -52,8 +52,10 @@ if __name__ == "__main__":
     parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor"], help="env name.")
     parser.add_argument("--ablate", type=str, default="text", choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
     parser.add_argument("--topk", type=int, default=10, help="top k most likely landmarks grounded by REG.")
+    parser.add_argument("--model", type=str, default="gpt", choices=["gpt", "ollama", "claude"], help="What llm to use")
     args = parser.parse_args()
 
+    model = args.model
     data_dpath = os.path.join(os.path.expanduser("~"), "ground", "data")
     graph_dpath = os.path.join(data_dpath, "maps", args.loc)
     lmk2sym_fpath = os.path.join(graph_dpath, "lmk2sym.json")
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     osm_fpath = os.path.join(data_dpath, "osm", f"{args.loc}.json")
     model_fpath = os.path.join(os.path.expanduser("~"), "ground", "models", "checkpoint-best")
     rel_embeds_fpath = os.path.join(data_dpath, f"known_rel_embeds.json")
-    reg_in_cache_fpath = os.path.join(data_dpath, f"reg_in_cache_{args.loc}_{LLMClient().model_type}.pkl")
+    reg_in_cache_fpath = os.path.join(data_dpath, f"reg_in_cache_{args.loc}_{LLMClient(model).model_type}.pkl")
     utt_fpath = os.path.join(data_dpath, f"utts_{args.loc}.txt")
     results_dpath = os.path.join(os.path.expanduser("~"), "ground", "results_spot", args.loc)
     os.makedirs(results_dpath, exist_ok=True)
@@ -75,7 +77,7 @@ if __name__ == "__main__":
 
     ground_outs = []
     for idx, utt in enumerate(utts):
-        ground_out = ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, args.ablate, args.topk, rel_embeds_fpath, reg_in_cache_fpath)
+        ground_out = ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, args.ablate, args.topk, rel_embeds_fpath, reg_in_cache_fpath, model)
         print(f"***** {idx}/{len(utts)}\nInput utt: {utt}\nLifted LTL: {ground_out['lifted_ltl']}\nSymbol to Grounding: {ground_out['sym2ground']}")
         if lmk2sym:
             print(f"Grounded LTL: {ground_out['grounded_ltl']}")
