@@ -5,10 +5,10 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 from llms.models import LLMClient
-from utils import load_from_file, save_to_file
+from .utils import load_from_file, save_to_file
 
 
-def embed_images(img_fpaths, cap_dpath, embed_dpath):
+def embed_images(img_fpaths, cap_dpath, embed_dpath, model):
     img_embeds = {}
     for img_fpath in img_fpaths:
         img_id = Path(img_fpath).stem
@@ -19,7 +19,7 @@ def embed_images(img_fpaths, cap_dpath, embed_dpath):
             img_cap = load_from_file(cap_fpath)
             img_embed = load_from_file(embed_fpath)
         else:
-            client = LLMClient()
+            client = LLMClient(model)
             img_cap = client.caption(img_fpath)  # image caption
             save_to_file(img_cap, cap_fpath)
             img_embed = client.get_embed(img_cap)  # embed image captioin
@@ -29,7 +29,7 @@ def embed_images(img_fpaths, cap_dpath, embed_dpath):
     return img_embeds
 
 
-def embed_texts(txts, obj_locs, embed_dpath):
+def embed_texts(txts, obj_locs, embed_dpath, model):
     txt_embeds = {}
     for lmk_name, txt in txts.items():
         if lmk_name not in obj_locs:
@@ -39,7 +39,7 @@ def embed_texts(txts, obj_locs, embed_dpath):
                 txt_emebed = load_from_file(embed_fpath)
             else:
                 txt["name"] = lmk_name  # add landmark name into its textual description
-                txt_emebed = LLMClient().get_embed(txt)
+                txt_emebed = LLMClient(model).get_embed(txt)
                 save_to_file(txt_emebed, embed_fpath)
 
             txt_embeds[lmk_name] = txt_emebed
@@ -51,9 +51,9 @@ class REG():
     """
     Referring Expression Grounding (REG) module. Use semantic description of landmarks and objects in text and images.
     """
-    def __init__(self, img_embeds, txt_embeds, query_cache_fpath):
+    def __init__(self, img_embeds, txt_embeds, query_cache_fpath, model):
         self.sem_ids,sem_embeds = [], []
-
+        self.model = model
         if img_embeds:
             self.sem_ids += list(img_embeds.keys())
             sem_embeds += list(img_embeds.values())
@@ -72,7 +72,7 @@ class REG():
         if query in self.query_cache:
             query_embeds = self.query_cache[query]
         else:
-            query_embeds = LLMClient().get_embed(query)
+            query_embeds = LLMClient(self.model).get_embed(query)
             self.query_cache[query] = query_embeds
             save_to_file(self.query_cache, self.query_cache_fpath)
         query_scores = cosine_similarity(np.array(query_embeds).reshape(1, -1), self.sem_embeds)[0]
@@ -80,29 +80,29 @@ class REG():
         return lmks_sorted[:topk]
 
 
-def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath):
+def reg(graph_dpath, osm_fpath, srer_outs, topk, ablate, in_cache_fpath, model):
     img_embeds, txt_embeds = None, None
 
     if not ablate or ablate == "both" or ablate == "text":
         img_cap_dpath = os.path.join(graph_dpath, "image_captions")
         os.makedirs(img_cap_dpath, exist_ok=True)
-        img_embed_dpath = os.path.join(graph_dpath, f"image_embeds_{LLMClient().model_type}")
+        img_embed_dpath = os.path.join(graph_dpath, f"image_embeds_{LLMClient(model).model_type}")
         os.makedirs(img_embed_dpath, exist_ok=True)
 
         img_dpath = os.path.join(graph_dpath, "images")  # SLAM
         img_fpaths = sorted([os.path.join(img_dpath, fname) for fname in os.listdir(img_dpath) if ".jpg" in fname or ".png" in fname])
-        img_embeds = embed_images(img_fpaths, img_cap_dpath, img_embed_dpath)
+        img_embeds = embed_images(img_fpaths, img_cap_dpath, img_embed_dpath, model)
 
     if not ablate or ablate == "both" or ablate == "image":
-        txt_embed_dpath = os.path.join(graph_dpath, f"text_embeds_{LLMClient().model_type}")
+        txt_embed_dpath = os.path.join(graph_dpath, f"text_embeds_{LLMClient(model).model_type}")
         os.makedirs(txt_embed_dpath, exist_ok=True)
 
         obj_locs_fpath = os.path.join(graph_dpath, "obj_locs.json")  # avoid lmks with visual description
         obj_locs = load_from_file(obj_locs_fpath)
 
         txts = load_from_file(osm_fpath)  # OSM
-        txt_embeds = embed_texts(txts, obj_locs, txt_embed_dpath)
-    reg = REG(img_embeds, txt_embeds, in_cache_fpath)
+        txt_embeds = embed_texts(txts, obj_locs, txt_embed_dpath, model)
+    reg = REG(img_embeds, txt_embeds, in_cache_fpath, model)
 
     for srer_out in tqdm(srer_outs, desc="Running referring expression grounding (REG) module"):
         grounded_sre_to_preds = {}

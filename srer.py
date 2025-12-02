@@ -4,7 +4,7 @@ import re
 from tqdm import tqdm
 
 from llms.models import *
-from utils import load_from_file, save_to_file
+from .utils import load_from_file, save_to_file
 
 
 PROPS = ['a', 'b', 'c', 'd', 'h', 'j', 'k']
@@ -97,21 +97,21 @@ def parse_llm_output(utt, raw_out):
     return parsed_out
 
 
-def srer(utt):
-    raw_out = LLMClient().extract(utt)
+def srer(utt, model):
+    raw_out = LLMClient(model).extract(utt)
     parsed_out = {"utt": utt}
     parsed_out.update(parse_llm_output(utt, raw_out))
     print(parsed_out)
     return raw_out, parsed_out
 
 
-def run_exp_srer(utts_fpath, srer_out_fpath):
+def run_exp_srer(utts_fpath, srer_out_fpath, model):
     if not os.path.isfile(srer_out_fpath):
         srer_outs = []
         utts = load_from_file(utts_fpath)
         for utt in tqdm(utts, desc="Running spatial referring expression recognition (SRER) module"):
             try:
-                _, srer_out = srer(utt)
+                _, srer_out = srer(utt, model)
                 srer_outs.append(srer_out)
             except Exception:
                 print(f"Failed on {utt}")
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     ]
 
     for utt in utts:
-        raw_out, parsed_out = srer(utt)
+        raw_out, parsed_out = srer(utt, "gpt")
 
         spatial_preds = parsed_out["spatial_preds"] if "spatial_preds" in parsed_out else {}
         print(f"{parsed_out['lifted_utt']}\n\n{parsed_out['lifted_symbol_map']}\n\n{parsed_out['sres']}\n\n{spatial_preds}\n\n{parsed_out['sre_to_preds']}\n\n\n")
