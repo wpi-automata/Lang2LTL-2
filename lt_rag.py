@@ -4,11 +4,11 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 
-from models import LLMClient
-from utils import deserialize_props_str, load_from_file, save_to_file
+from llms.models import LLMClient
+from .utils import deserialize_props_str, load_from_file, save_to_file
 
 
-def retriever(query, embeds_fpath, raw_data, topk):
+def retriever(query, embeds_fpath, raw_data, topk, model):
     nprops_query = len(deserialize_props_str(query[1]))
     query = query[:1]
 
@@ -33,7 +33,7 @@ def retriever(query, embeds_fpath, raw_data, topk):
         if utt in utt2embed:
             embed = utt2embed[utt]
         else:
-            embed = LLMClient().get_embed(utt)  # embedding
+            embed = LLMClient(model).get_embed(utt)  # embedding
             utt2embed[utt] = embed
             embeds_updated = True
             print(f"added new prompt embedding:\n{utt}")
@@ -48,7 +48,7 @@ def retriever(query, embeds_fpath, raw_data, topk):
     if query_str in utt2embed:
         embed_query = utt2embed[query_str]
     else:
-        embed_query = LLMClient().get_embed(query)
+        embed_query = LLMClient(model).get_embed(query)
         utt2embed[query_str] = embed_query
         embeds_updated = True
         print(f"added new query embedding:\n{utt}")
@@ -67,22 +67,22 @@ def retriever(query, embeds_fpath, raw_data, topk):
     return prompt_examples
 
 
-def lifted_translate(query, embeds_fpath, raw_data, topk):
+def lifted_translate(query, embeds_fpath, raw_data, topk, model):
     prompt_examples = retriever(query, embeds_fpath, raw_data, topk)
 
     # breakpoint()
 
-    lifted_ltl, num_tokens = LLMClient().translate(query[0], prompt_examples)
+    lifted_ltl, num_tokens = LLMClient(model).translate(query[0], prompt_examples)
     return lifted_ltl, num_tokens
 
 
-def lt(data_dpath, srer_out_fname, raw_data, topk):
+def lt(data_dpath, srer_out_fname, raw_data, topk, model):
     lt_outs = []
     srer_outs = load_from_file(os.path.join(data_dpath, srer_out_fname))
 
     for srer_out in srer_outs:
         query = [srer_out['lifted_utt'], json.dumps(list(srer_out["lifted_symbol_map"].keys()))]
-        lifted_ltl, num_tokens = lifted_translate(query, raw_data, topk)
+        lifted_ltl, num_tokens = lifted_translate(query, raw_data, topk, model)
 
         # print(f"query: {query}\n{lifted_ltl}\n")
 
@@ -93,7 +93,7 @@ def lt(data_dpath, srer_out_fname, raw_data, topk):
     return lifted_ltl, num_tokens
 
 
-def run_exp_lt_rag(spg_out_fpath, lt_out_fpath, data_dpath, ltl_fpath, topk):
+def run_exp_lt_rag(spg_out_fpath, lt_out_fpath, data_dpath, ltl_fpath, topk, model):
     if not os.path.isfile(lt_out_fpath):
         raw_data = load_from_file(ltl_fpath)
         spg_outs = load_from_file(spg_out_fpath)
@@ -103,7 +103,7 @@ def run_exp_lt_rag(spg_out_fpath, lt_out_fpath, data_dpath, ltl_fpath, topk):
 
         for spg_out in tqdm(spg_outs, desc="Running lifted translation (LT) module (method='rag')"):
             query = [spg_out['lifted_utt'], json.dumps(list(spg_out["props"]))]
-            lifted_ltl, num_tokens = lifted_translate(query, embeds_fpath, raw_data, topk)
+            lifted_ltl, num_tokens = lifted_translate(query, embeds_fpath, raw_data, topk, model)
             tot_tokens += num_tokens
             # print(f"query: {query}\n{lifted_ltl}\n")
             spg_out["lifted_ltl"] = lifted_ltl
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     raw_data = load_from_file(data_fpath)
 
     srer_out_fname = "srer_outs_blackstone.json"
-    lt(data_dpath, srer_out_fname, raw_data, topk=50)
+    lt(data_dpath, srer_out_fname, raw_data, topk=50, model="gpt")
 
     # query = ["go to a at most five times", "['a', 'a', 'a', 'a', 'a']"]
     # lifted_translate(query, raw_data, topk=50)

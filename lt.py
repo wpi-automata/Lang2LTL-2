@@ -2,8 +2,8 @@ import os
 from tqdm import tqdm
 import string
 
-from lt_s2s_sup_tcd import Seq2Seq
-from utils import load_from_file, save_to_file
+from .lt_s2s_sup_tcd import Seq2Seq
+from .utils import load_from_file, save_to_file
 
 
 def lt(spg_out, lt_model):
