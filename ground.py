@@ -2,11 +2,7 @@ import os
 import argparse
 
 from llms.models import LLMClient
-from .srer import srer
-from .reg import reg
-from .spg import load_lmks, spg
-from .lt import Seq2Seq, lt
-from .utils import load_from_file, save_to_file
+from Lang2LTL_2 import *
 
 
 def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_embeds_fpath, reg_in_cache_fpath, model="gpt"):
@@ -49,7 +45,7 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor"], help="env name.")
+    parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor", "b_term_demo"], help="env name.")
     parser.add_argument("--ablate", type=str, default="text", choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
     parser.add_argument("--topk", type=int, default=10, help="top k most likely landmarks grounded by REG.")
     parser.add_argument("--model", type=str, default="gpt", choices=["gpt", "ollama", "claude"], help="What llm to use")
@@ -71,8 +67,9 @@ if __name__ == "__main__":
 
     utts = [
         #"Go to the couch in front of the television, the couch to the left of the kitchen counter, the kitchen counter between the couch and the refrigerator, the table next to the door, and the chair on the left of the bookshelf in any order",
-        "Go to the couch in front of the television without entering the kitchen"
+        # "Go to the couch in front of the television without entering the kitchen"
         #"Visit the white car, then go to the red brick wall and then go to the silver car near the apartment, in addition you can never go to the apartment once you've seen the white car"
+        "Navigate to a couch"
     ]
 
     ground_outs = []
