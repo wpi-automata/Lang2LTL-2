@@ -2,7 +2,7 @@ import os
 import argparse
 
 from llms.models import LLMClient
-from Lang2LTL_2 import *
+from .Lang2LTL_2 import *
 
 
 def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_embeds_fpath, reg_in_cache_fpath, model="gpt"):
@@ -45,7 +45,7 @@ def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--loc", type=str, default="indoor", choices=["indoor", "outdoor", "b_term_demo"], help="env name.")
+    parser.add_argument("--loc", type=str, default="b_term_demo", choices=["indoor", "outdoor", "b_term_demo"], help="env name.")
     parser.add_argument("--ablate", type=str, default="text", choices=["both", "image", "text", None], help="ablate out a modality (indoor: text. outdoor: None).")
     parser.add_argument("--topk", type=int, default=10, help="top k most likely landmarks grounded by REG.")
     parser.add_argument("--model", type=str, default="gpt", choices=["gpt", "ollama", "claude"], help="What llm to use")
