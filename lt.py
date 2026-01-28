@@ -10,7 +10,20 @@ def lt(spg_out, lt_model):
     lifted_utt = spg_out["lifted_utt"]
     query = lifted_utt.translate(str.maketrans('', '', string.punctuation))
     lifted_ltl = lt_model.type_constrained_decode([query])[0]
-    spg_out["lifted_ltl"] = lifted_ltl
+
+    def swapRules(ltl):
+        s = list(ltl)
+        i = 0
+        while i < len(s) - 6:
+            if s[i] == 'U' and s[i+2] == '!':
+                s[i+4], s[i+6] = s[i+6], s[i+4]
+                i+=6
+            else:
+                i += 1
+        return ''.join(s)
+
+
+    spg_out["lifted_ltl"] = swapRules(lifted_ltl)
 
 
 def run_exp_lt(spg_out_fpath, model_fpath, lt_out_fpath):
