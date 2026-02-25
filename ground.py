@@ -2,7 +2,7 @@ import os
 import argparse
 
 from llms.models import LLMClient
-from .Lang2LTL_2 import *
+from . import *
 
 
 def ground(graph_dpath, lmk2sym, osm_fpath, model_fpath, utt, ablate, topk, rel_embeds_fpath, reg_in_cache_fpath, model="gpt"):
